@@ -20,12 +20,12 @@
     },
     "autoload": {
         "psr-4": {
-            "PhpXml\\PAXB\\": "src/"
+            "Jeidison\\PAXB\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Jeidison\\Tests\\": "tests/"
         }
     },
     "config": {
