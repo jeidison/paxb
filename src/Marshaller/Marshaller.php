@@ -17,7 +17,7 @@ use ReflectionObject;
 use ReflectionProperty;
 
 /**
- * @author Jeidison Farias <p@tchwork.com>
+ * @author Jeidison Farias <jeidison.farias@gmail.com>
  */
 class Marshaller implements IMarshaller
 {
