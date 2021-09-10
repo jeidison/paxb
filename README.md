@@ -28,7 +28,7 @@ $ composer require jeidison/paxb
 ## Adaptadores
 
 Ao lidar com tipos que precisam de modificações nos valores antes de gerar o XML, podemos escrever um adaptador para 
-indicar ao PAXB como gerenciar um tipo específico.
+indicar ao PAXB como gerenciar o valor de um tipo específico.
 
 ## Adaptador
 ```php
