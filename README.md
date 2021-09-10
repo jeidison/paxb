@@ -8,7 +8,7 @@ Ele suporta uma estrutura de ligação que mapeia elementos e atributos XML para
 
 ## Requisitos
 * PHP 8.0+
-* A extensão dom
+* Extensão dom
 
 ## Instalação
 
