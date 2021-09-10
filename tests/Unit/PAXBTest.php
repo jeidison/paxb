@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\Unit;
+namespace Jeidison\Tests\Unit;
 
 use DateTime;
-use PhpXml\PAXB\PAXB;
-use Tests\Resources\Beans\Address;
-use Tests\Resources\Beans\Author;
-use Tests\Resources\Beans\Book;
-use Tests\TestCase;
+use Jeidison\PAXB\PAXB;
+use Jeidison\Tests\Resources\Beans\Address;
+use Jeidison\Tests\Resources\Beans\Author;
+use Jeidison\Tests\Resources\Beans\Book;
+use Jeidison\Tests\TestCase;
 
 class PAXBTest extends TestCase
 {
@@ -26,12 +26,14 @@ class PAXBTest extends TestCase
 
         $book = new Book();
         $book->setId(1);
-        $book->setName("PHPBX - XML Binding");
+        $book->setName("PHP XML Binding");
         $book->setAuthor($author);
         $book->setDate(new DateTime());
 
         $paxb = PAXB::createMarshaller();
+        $paxb->setFormatOutput(true);
         $xml  = $paxb->marshal($book);
+        echo $xml;
 
         $this->assertNotNull($xml);
     }

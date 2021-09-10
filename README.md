@@ -30,7 +30,7 @@ $ composer require jeidison/paxb
 Ao lidar com tipos que precisam de modificações nos valores antes de gerar o XML, podemos escrever um adaptador para 
 indicar ao PAXB como gerenciar um tipo específico.
 
-## Exemplo de Adaptador
+## Adaptador
 ```php
 <?php
 ...
@@ -50,7 +50,7 @@ class DateBrAdapter implements XmlAdapter
 }
 ```
 
-## Exemplo de uso
+## Uso das anotações
 
 ```php
 <?php
@@ -75,6 +75,54 @@ class Book
     private string $address;
     
     ...
+```
+
+## Gerando XML
+
+```php
+<?php
+...
+
+$book = new Book();
+$book->setId(1);
+$book->setName("PHP XML Binding");
+$book->setAuthor($author);
+$book->setDate(new DateTime());
+$book->setAddress($address)
+
+$paxb = PAXB::createMarshaller();
+$xml  = $paxb->marshal($book);
+
+echo $xml;
+
+...
+```
+
+## XML gerado
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<livros identificador="1">
+    <nome>PHP XML Binding</nome>
+    <date>10/09/2021</date>
+    <author_data>
+        <name>Jeidison Farias</name>
+        <address>
+            <number>123</number>
+            <street>Rua 10</street>
+        </address>
+    </author_data>
+</livros>
+```
+
+## Transformando XML em objeto PHP
+
+```php
+<?php
+...
+
+    // Ainda não implementado
+
 ```
 
 ## Autor

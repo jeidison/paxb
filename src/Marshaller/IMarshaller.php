@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpXml\PAXB\Marshaller;
+namespace Jeidison\PAXB\Marshaller;
 
 interface IMarshaller
 {

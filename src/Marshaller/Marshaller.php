@@ -1,17 +1,17 @@
 <?php
 
-namespace PhpXml\PAXB\Marshaller;
+namespace Jeidison\PAXB\Marshaller;
 
 use DOMDocument;
 use DOMNode;
-use PhpXml\PAXB\Attributes\Adapters\XmlAdapter;
-use PhpXml\PAXB\Attributes\Adapters\XmlPhpTypeAdapter;
-use PhpXml\PAXB\Attributes\Element;
-use PhpXml\PAXB\Attributes\XmlAttribute;
-use PhpXml\PAXB\Attributes\XmlRootElement;
-use PhpXml\PAXB\Attributes\XmlTransient;
-use PhpXml\PAXB\Attributes\XmlType;
-use PhpXml\PAXB\Exception\MarshalException;
+use Jeidison\PAXB\Attributes\Adapters\XmlAdapter;
+use Jeidison\PAXB\Attributes\Adapters\XmlPhpTypeAdapter;
+use Jeidison\PAXB\Attributes\Element;
+use Jeidison\PAXB\Attributes\XmlAttribute;
+use Jeidison\PAXB\Attributes\XmlRootElement;
+use Jeidison\PAXB\Attributes\XmlTransient;
+use Jeidison\PAXB\Attributes\XmlType;
+use Jeidison\PAXB\Exception\MarshalException;
 use ReflectionAttribute;
 use ReflectionObject;
 use ReflectionProperty;

@@ -1,27 +1,24 @@
 <?php
 
-namespace Tests\Resources\Beans;
+namespace Jeidison\Tests\Resources\Beans;
 
 use DateTime;
-use PhpXml\PAXB\Attributes\Adapters\DateTimeBrAdapter;
-use PhpXml\PAXB\Attributes\Adapters\XmlPhpTypeAdapter;
-use PhpXml\PAXB\Attributes\XmlAttribute;
-use PhpXml\PAXB\Attributes\XmlElement;
-use PhpXml\PAXB\Attributes\XmlRootElement;
+use Jeidison\PAXB\Attributes\Adapters\DateBrAdapter;
+use Jeidison\PAXB\Attributes\Adapters\XmlPhpTypeAdapter;
+use Jeidison\PAXB\Attributes\XmlAttribute;
+use Jeidison\PAXB\Attributes\XmlElement;
+use Jeidison\PAXB\Attributes\XmlRootElement;
 
-#[XmlRootElement(name: "books")]
+#[XmlRootElement(name: "livros")]
 class Book
 {
     #[XmlAttribute(name: "identificador")]
     private int $id;
 
-    #[XmlAttribute]
-    private ?string $xmlns = null;
-
     #[XmlElement("nome")]
     private String $name;
 
-    #[XmlPhpTypeAdapter(DateTimeBrAdapter::class)]
+    #[XmlPhpTypeAdapter(DateBrAdapter::class)]
     private DateTime $date;
 
     #[XmlElement("author_data")]

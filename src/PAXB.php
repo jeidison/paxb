@@ -1,8 +1,8 @@
 <?php
 
-namespace PhpXml\PAXB;
+namespace Jeidison\PAXB;
 
-use PhpXml\PAXB\Marshaller\Marshaller;
+use Jeidison\PAXB\Marshaller\Marshaller;
 
 class PAXB
 {

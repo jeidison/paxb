@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpXml\PAXB\Attributes;
+namespace Jeidison\PAXB\Attributes;
 
 abstract class Element
 {

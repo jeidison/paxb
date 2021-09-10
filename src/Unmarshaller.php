@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpXml\PAXB;
+namespace Jeidison\PAXB;
 
 interface Unmarshaller
 {

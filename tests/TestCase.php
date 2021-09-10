@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Jeidison\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 

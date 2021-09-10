@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpXml\PAXB\Exception;
+namespace Jeidison\PAXB\Exception;
 
 use Exception;
 

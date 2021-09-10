@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Resources\Beans;
+namespace Jeidison\Tests\Resources\Beans;
 
-use PhpXml\PAXB\Attributes\XmlElement;
+use Jeidison\PAXB\Attributes\XmlElement;
 
 class Author
 {

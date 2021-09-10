@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpXml\PAXB\Attributes\Adapters;
+namespace Jeidison\PAXB\Attributes\Adapters;
 
 class DateAmericanAdapter implements XmlAdapter
 {
