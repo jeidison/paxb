@@ -50,7 +50,7 @@ class DateBrAdapter implements XmlAdapter
 }
 ```
 
-## Uso das anotações
+## Uso dos atributos
 
 ```php
 <?php
@@ -98,7 +98,7 @@ echo $xml;
 ...
 ```
 
-## XML gerado
+## Exemplo de XML gerado
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -115,7 +115,7 @@ echo $xml;
 </livros>
 ```
 
-## Transformando XML em objeto PHP
+## Transformando XML em objetos PHP
 
 ```php
 <?php
