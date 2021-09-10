@@ -1,0 +1,19 @@
+version: '3.7'
+
+services:
+  phpxb:
+    build: .
+    container_name: phpxb
+#    restart: always
+    environment:
+      - TZ=America/Sao_Paulo
+    volumes:
+      - .:/var/www
+    ports:
+      - "8001:8001"
+    networks:
+      - phpxb-network
+
+networks:
+  phpxb-network:
+    driver: bridge
