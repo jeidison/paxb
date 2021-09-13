@@ -1,8 +1,6 @@
 # PAXB (PHP Architecture for XML Binding)
 
 ## Intrudução
-Esse projeto é inspirado no [JAXB](https://docs.oracle.com/javase/tutorial/jaxb/intro/index.html) da linguagem Java.
-
 O PAXB fornece uma maneira rápida e conveniente de gerar XML a partir de objetos PHP e ler XML em objetos.
 Ele suporta uma estrutura de ligação que mapeia elementos e atributos XML para propriedades PHP usando [atributos no PHP 8](https://www.php.net/manual/pt_BR/language.attributes.php). 
 
@@ -125,6 +123,8 @@ $unmarshaller = PAXB::createUnmarshal(Book::class);
 $book = $unmarshaller->unmarshal($xml);
 
 ```
+
+Esse projeto é inspirado no [JAXB](https://docs.oracle.com/javase/tutorial/jaxb/intro/index.html) da linguagem Java.
 
 ## Autor
 - [Jeidison Farias](https://github.com/jeidison)
