@@ -11,7 +11,7 @@ Ele suporta uma estrutura de ligação que mapeia elementos e atributos XML para
 ## Instalação
 
 ```bash
-$ composer require jeidison/paxb
+composer require jeidison/paxb
 ```
 
 ## Atributos suportados
