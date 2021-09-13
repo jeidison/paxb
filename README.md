@@ -123,8 +123,11 @@ $unmarshaller = PAXB::createUnmarshal(Book::class);
 $book = $unmarshaller->unmarshal($xml);
 
 ```
+<hr>
 
 Esse projeto é inspirado no [JAXB](https://docs.oracle.com/javase/tutorial/jaxb/intro/index.html) da linguagem Java.
+
+<hr>
 
 ## Autor
 - [Jeidison Farias](https://github.com/jeidison)
