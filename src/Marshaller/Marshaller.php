@@ -11,6 +11,7 @@ use Jeidison\PAXB\Attributes\XmlAttribute;
 use Jeidison\PAXB\Attributes\XmlRootElement;
 use Jeidison\PAXB\Attributes\XmlTransient;
 use Jeidison\PAXB\Attributes\XmlType;
+use Jeidison\PAXB\Commons\MarshallerCommons;
 use Jeidison\PAXB\Exception\MarshalException;
 use ReflectionAttribute;
 use ReflectionObject;
@@ -21,6 +22,8 @@ use ReflectionProperty;
  */
 class Marshaller implements IMarshaller
 {
+    use MarshallerCommons;
+
     private string $version = '1.0';
     private string $encoding = 'UTF-8';
     private ?bool $xmlStandalone = null;
@@ -199,45 +202,6 @@ class Marshaller implements IMarshaller
         return $value;
     }
 
-    private function getAttributeXmlName(ReflectionProperty $reflectionProperty): string
-    {
-        $attributes = $reflectionProperty->getAttributes();
-        if (count($attributes) == 0)
-            return $this->normalizeTagName($reflectionProperty->getName());
-
-        foreach ($attributes as $attribute) {
-            $attributeInstance = $attribute->newInstance();
-            if ($attributeInstance instanceof XmlAttribute)
-                return $attributeInstance->name ?? $this->normalizeTagName($reflectionProperty->getName());
-        }
-
-        return $this->normalizeTagName($reflectionProperty->getName());
-    }
-
-    private function isChild(ReflectionProperty $reflectionProperty, object $objectInstance): bool
-    {
-        $reflectionType = $reflectionProperty->getType();
-        if ($reflectionType === null)
-            return false;
-
-        if ($reflectionType->isBuiltin())
-            return false;
-
-        $value = $reflectionProperty->getValue($objectInstance);
-        if ($value === null)
-            return false;
-
-        $reflectionObject = new ReflectionObject($value);
-
-        if ($reflectionObject->isInternal())
-            return false;
-
-        if (!$reflectionObject->isInstantiable())
-            return false;
-
-        return true;
-    }
-
     private function getXmlTypePropOrder(ReflectionObject $reflectionObject): array
     {
         $attributes = $reflectionObject->getAttributes();
@@ -283,50 +247,6 @@ class Marshaller implements IMarshaller
         return false;
     }
 
-    private function isAttribute(ReflectionProperty $reflectionProperty): bool
-    {
-        $attributes = $reflectionProperty->getAttributes();
-        if (count($attributes) <= 0)
-            return false;
-
-        foreach ($attributes as $attribute) {
-            $attributeInstance = $attribute->newInstance();
-            if ($attributeInstance instanceof XmlAttribute)
-                return true;
-        }
-
-        return false;
-    }
-
-    private function getTagName(ReflectionProperty $reflectionProperty): string
-    {
-        $attributes = $reflectionProperty->getAttributes();
-        if (count($attributes) <= 0)
-            return $this->normalizeTagName($reflectionProperty->getName());
-
-        foreach ($attributes as $attribute) {
-            $attributeInstance = $attribute->newInstance();
-            if ($attributeInstance instanceof Element)
-                return $attributeInstance->getName() ?? $this->normalizeTagName($reflectionProperty->getName());
-        }
-
-        return $this->normalizeTagName($reflectionProperty->getName());
-    }
-
-    /**
-     * @param array<ReflectionAttribute> $attributes
-     */
-    private function retrieveRootElement(array $attributes, string $className): string
-    {
-        foreach ($attributes as $attribute) {
-            $attributeInstance = $attribute->newInstance();
-            if ($attributeInstance instanceof XmlRootElement)
-                return $attributeInstance->getName() ?? $this->normalizeTagName($className);
-        }
-
-        return $this->normalizeTagName($className);
-    }
-
     /**
      * @param array<ReflectionAttribute> $attributes
      */
@@ -360,10 +280,5 @@ class Marshaller implements IMarshaller
         }
 
         return $ordered;
-    }
-
-    private function normalizeTagName(string $tagName): string
-    {
-        return lcfirst(ucwords($tagName));
     }
 }

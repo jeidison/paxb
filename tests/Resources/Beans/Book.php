@@ -22,7 +22,7 @@ class Book
     private DateTime $date;
 
     #[XmlElement("author_data")]
-    private Author $author;
+    private ?Author $author = null;
 
     public function getId(): int
     {

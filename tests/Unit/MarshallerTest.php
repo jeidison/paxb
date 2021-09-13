@@ -9,7 +9,7 @@ use Jeidison\Tests\Resources\Beans\Author;
 use Jeidison\Tests\Resources\Beans\Book;
 use Jeidison\Tests\TestCase;
 
-class PAXBTest extends TestCase
+class MarshallerTest extends TestCase
 {
     public function testMarshal()
     {
@@ -30,10 +30,9 @@ class PAXBTest extends TestCase
         $book->setAuthor($author);
         $book->setDate(new DateTime());
 
-        $paxb = PAXB::createMarshaller();
-        $paxb->setFormatOutput(true);
-        $xml  = $paxb->marshal($book);
-        echo $xml;
+        $marshaller = PAXB::createMarshaller();
+        $marshaller->setFormatOutput(true);
+        $xml  = $marshaller->marshal($book);
 
         $this->assertNotNull($xml);
     }

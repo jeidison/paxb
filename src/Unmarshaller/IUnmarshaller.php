@@ -1,8 +1,8 @@
 <?php
 
-namespace Jeidison\PAXB;
+namespace Jeidison\PAXB\Unmarshaller;
 
-interface Unmarshaller
+interface IUnmarshaller
 {
     public function unmarshal(string $xml): object;
 }

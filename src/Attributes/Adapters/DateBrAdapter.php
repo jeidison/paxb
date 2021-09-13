@@ -2,16 +2,19 @@
 
 namespace Jeidison\PAXB\Attributes\Adapters;
 
+use DateTime;
+
 class DateBrAdapter implements XmlAdapter
 {
 
-    public function marshal(object $object): string
+    public function marshal(?object $object): string
     {
         return $object->format('d/m/Y');
     }
 
-    public function unmarshal(object $object): object
+    public function unmarshal(?string $object): ?object
     {
-
+        return DateTime::createFromFormat('d/m/Y', $object)
+                       ->setTime(null, null, null);
     }
 }

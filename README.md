@@ -37,15 +37,15 @@ indicar ao PAXB como gerenciar o valor de um tipo específico.
 
 class DateBrAdapter implements XmlAdapter
 {
-
-    public function marshal(object $object): ?string
+    public function marshal(?object $object): string
     {
         return $object->format('d/m/Y');
     }
 
-    public function unmarshal(object $object): ?object
+    public function unmarshal(?string $object): ?object
     {
-        return $object
+        return DateTime::createFromFormat('d/m/Y', $object)
+                       ->setTime(null, null, null);
     }
 }
 ```
@@ -78,7 +78,6 @@ class Book
 ```
 
 ## Gerando XML
-
 ```php
 <?php
 ...
@@ -94,7 +93,6 @@ $paxb = PAXB::createMarshaller();
 $xml  = $paxb->marshal($book);
 
 echo $xml;
-
 ...
 ```
 
@@ -121,7 +119,10 @@ echo $xml;
 <?php
 ...
 
-    // Ainda não implementado
+$xml = 'O seu XML';
+
+$unmarshaller = PAXB::createUnmarshal(Book::class);
+$book = $unmarshaller->unmarshal($xml);
 
 ```
 

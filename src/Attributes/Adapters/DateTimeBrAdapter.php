@@ -10,7 +10,7 @@ class DateTimeBrAdapter implements XmlAdapter
         return $object->format('d/m/Y H:i:s');
     }
 
-    public function unmarshal(object $object): object
+    public function unmarshal(string $object): object
     {
 
     }

@@ -13,7 +13,7 @@ class DateAmericanAdapter implements XmlAdapter
         return $object->format('Y-m-d');
     }
 
-    public function unmarshal(object $object): ?object
+    public function unmarshal(string $object): ?object
     {
 
     }
