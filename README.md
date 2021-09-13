@@ -28,7 +28,7 @@ $ composer require jeidison/paxb
 Ao lidar com tipos que precisam de modificações nos valores antes de gerar o XML, podemos escrever um adaptador para 
 indicar ao PAXB como gerenciar o valor de um tipo específico.
 
-## Adaptador
+## Exemplo de adaptador
 ```php
 <?php
 ...
@@ -48,7 +48,7 @@ class DateBrAdapter implements XmlAdapter
 }
 ```
 
-## Uso dos atributos
+## Exemplo de uso dos atributos
 
 ```php
 <?php
