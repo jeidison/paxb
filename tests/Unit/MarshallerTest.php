@@ -1,13 +1,13 @@
 <?php
 
-namespace Jeidison\Tests\Unit;
+namespace Jeidison\PAXB\Tests\Unit;
 
 use DateTime;
 use Jeidison\PAXB\PAXB;
-use Jeidison\Tests\Resources\Beans\Address;
-use Jeidison\Tests\Resources\Beans\Author;
-use Jeidison\Tests\Resources\Beans\Book;
-use Jeidison\Tests\TestCase;
+use Jeidison\PAXB\Tests\Resources\Beans\Address;
+use Jeidison\PAXB\Tests\Resources\Beans\Author;
+use Jeidison\PAXB\Tests\Resources\Beans\Book;
+use Jeidison\PAXB\Tests\TestCase;
 
 class MarshallerTest extends TestCase
 {

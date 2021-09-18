@@ -4,6 +4,6 @@ namespace Jeidison\PAXB\Attributes\Adapters;
 
 interface XmlAdapter
 {
-    public function marshal(?object $object): ?string;
-    public function unmarshal(?string $object): ?object;
+    public function marshal(mixed $object): mixed;
+    public function unmarshal(mixed $object): mixed;
 }

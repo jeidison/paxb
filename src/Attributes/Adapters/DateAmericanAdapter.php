@@ -5,7 +5,7 @@ namespace Jeidison\PAXB\Attributes\Adapters;
 class DateAmericanAdapter implements XmlAdapter
 {
 
-    public function marshal(?object $object): ?string
+    public function marshal(mixed $object): ?string
     {
         if ($object === null)
             return null;
@@ -13,7 +13,7 @@ class DateAmericanAdapter implements XmlAdapter
         return $object->format('Y-m-d');
     }
 
-    public function unmarshal(string $object): ?object
+    public function unmarshal(mixed $object): ?object
     {
 
     }

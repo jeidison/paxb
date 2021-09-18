@@ -1,10 +1,10 @@
 <?php
 
-namespace Jeidison\Tests\Unit;
+namespace Jeidison\PAXB\Tests\Unit;
 
 use Jeidison\PAXB\PAXB;
-use Jeidison\Tests\Resources\Beans\Book;
-use Jeidison\Tests\TestCase;
+use Jeidison\PAXB\Tests\Resources\Beans\Book;
+use Jeidison\PAXB\Tests\TestCase;
 
 class UnMarshallerTest extends TestCase
 {

@@ -11,6 +11,7 @@ use Jeidison\PAXB\Attributes\XmlAttribute;
 use Jeidison\PAXB\Attributes\XmlRootElement;
 use Jeidison\PAXB\Attributes\XmlTransient;
 use Jeidison\PAXB\Attributes\XmlType;
+use Jeidison\PAXB\Attributes\XmlValue;
 use Jeidison\PAXB\Commons\MarshallerCommons;
 use Jeidison\PAXB\Exception\MarshalException;
 use ReflectionAttribute;
@@ -33,50 +34,66 @@ class Marshaller implements IMarshaller
     private ?string $prefix = null;
     private ?string $namespaceURI = null;
     private ?bool $validateOnParse = null;
+    private bool $responseAsString = true;
 
-    public function setVersion(string $version): void
+    public function setResponseAsString(bool $responseAsString): self
+    {
+        $this->responseAsString = $responseAsString;
+        return $this;
+    }
+
+    public function setVersion(string $version): self
     {
         $this->version = $version;
+        return $this;
     }
 
-    public function setEncoding(string $encoding): void
+    public function setEncoding(string $encoding): self
     {
         $this->encoding = $encoding;
+        return $this;
     }
 
-    public function setXmlStandalone(?bool $xmlStandalone): void
+    public function setXmlStandalone(?bool $xmlStandalone): self
     {
         $this->xmlStandalone = $xmlStandalone;
+        return $this;
     }
 
-    public function setDocumentURI(?string $documentURI): void
+    public function setDocumentURI(?string $documentURI): self
     {
         $this->documentURI = $documentURI;
+        return $this;
     }
 
-    public function setFormatOutput(bool $formatOutput): void
+    public function setFormatOutput(bool $formatOutput): self
     {
         $this->formatOutput = $formatOutput;
+        return $this;
     }
 
-    public function setPrefix(?string $prefix): void
+    public function setPrefix(?string $prefix): self
     {
         $this->prefix = $prefix;
+        return $this;
     }
 
-    public function setNamespaceURI(?string $namespaceURI): void
+    public function setNamespaceURI(?string $namespaceURI): self
     {
         $this->namespaceURI = $namespaceURI;
+        return $this;
     }
 
-    public function setPreserveWhiteSpace(?bool $preserveWhiteSpace): void
+    public function setPreserveWhiteSpace(?bool $preserveWhiteSpace): self
     {
         $this->preserveWhiteSpace = $preserveWhiteSpace;
+        return $this;
     }
 
-    public function setValidateOnParse(?bool $validateOnParse): void
+    public function setValidateOnParse(?bool $validateOnParse): self
     {
         $this->validateOnParse = $validateOnParse;
+        return $this;
     }
 
     protected function buildDom(): DOMDocument
@@ -107,7 +124,7 @@ class Marshaller implements IMarshaller
         return $dom;
     }
 
-    public function marshal(object $paxbObject): string
+    public function marshal(object $paxbObject): string|DOMDocument
     {
         $reflectionObject = new ReflectionObject($paxbObject);
         $attributesRoot   = $reflectionObject->getAttributes();
@@ -124,7 +141,7 @@ class Marshaller implements IMarshaller
 
         $dom->appendChild($root);
 
-        return $dom->saveXML();
+        return $this->responseAsString ? $dom->saveXML() : $dom;
     }
 
     private function marshallChild(ReflectionProperty $reflectionProperty, object $objectInstance, DOMDocument $dom): ?DOMNode
@@ -153,6 +170,11 @@ class Marshaller implements IMarshaller
             if ($this->isTransient($reflectionProperty))
                 continue;
 
+            if ($this->isXmlValue($reflectionProperty)) {
+                $root->nodeValue = $this->getTagValue($reflectionProperty, $paxbObject);
+                continue;
+            }
+
             $isChild = $this->isChild($reflectionProperty, $paxbObject);
             if ($isChild) {
                 $child = $this->marshallChild($reflectionProperty, $paxbObject, $dom);
@@ -169,6 +191,24 @@ class Marshaller implements IMarshaller
             if ($this->isAttribute($reflectionProperty)) {
                 $attributeXmlName = $this->getAttributeXmlName($reflectionProperty);
                 $root->setAttribute($attributeXmlName, $tagValue);
+            } elseif (is_array($tagValue)) {
+                $tagName = $this->getTagName($reflectionProperty);
+                foreach ($tagValue as $value) {
+                    $tagElement = $dom->createElement($tagName);
+                    if (is_object($value)) {
+                        $reflectionObject = new ReflectionObject($value);
+                        $childNode = $this->reflectionProperties($reflectionObject, $value, $dom, $tagElement);
+                        if ($childNode === null)
+                            continue;
+
+                        $root->appendChild($childNode);
+                    } else {
+                        $tagName = $this->getTagName($reflectionProperty);
+                        $child   = $dom->createElement($tagName, $tagValue);
+                        $root->appendChild($child);
+                    }
+                }
+                $root->appendChild($tagElement);
             } else {
                 $tagName = $this->getTagName($reflectionProperty);
                 $child   = $dom->createElement($tagName, $tagValue);
@@ -241,6 +281,21 @@ class Marshaller implements IMarshaller
         foreach ($attributes as $attribute) {
             $attributeInstance = $attribute->newInstance();
             if ($attributeInstance instanceof XmlTransient)
+                return true;
+        }
+
+        return false;
+    }
+
+    private function isXmlValue(ReflectionProperty $reflectionProperty): bool
+    {
+        $attributes = $reflectionProperty->getAttributes();
+        if (count($attributes) <= 0)
+            return false;
+
+        foreach ($attributes as $attribute) {
+            $attributeInstance = $attribute->newInstance();
+            if ($attributeInstance instanceof XmlValue)
                 return true;
         }
 
