@@ -1,6 +1,6 @@
 <?php
 
-namespace Jeidison\Tests\Resources\Beans;
+namespace Jeidison\PAXB\Tests\Resources\Beans;
 
 use Jeidison\PAXB\Attributes\XmlElement;
 

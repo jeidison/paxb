@@ -25,7 +25,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Jeidison\\Tests\\": "tests/"
+            "Jeidison\\PAXB\\Tests\\": "tests/"
         }
     },
     "config": {
