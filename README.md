@@ -20,6 +20,7 @@ composer require jeidison/paxb
 - \#[XmlElement]
 - \#[XmlRootElement]
 - \#[XmlTransient]
+- \#[XmlValue]
 - \#[XmlType]
 - \#[XmlPhpTypeAdapter]
 
@@ -35,12 +36,12 @@ indicar ao PAXB como gerenciar o valor de um tipo específico.
 
 class DateBrAdapter implements XmlAdapter
 {
-    public function marshal(?object $object): string
+    public function marshal(mixed $object): mixed
     {
         return $object->format('d/m/Y');
     }
 
-    public function unmarshal(?string $object): ?object
+    public function unmarshal(mixed $object): mixed
     {
         return DateTime::createFromFormat('d/m/Y', $object)
                        ->setTime(null, null, null);
@@ -54,6 +55,39 @@ class DateBrAdapter implements XmlAdapter
 <?php
 ...
 
+#[XmlType(propOrder: ["number", "street", "fullAddress"])]
+class Address
+{
+    #[XmlTransient]
+    private string $fullAddress;
+
+    #[XmlElement("street")]
+    private string $address;
+
+    #[XmlElement]
+    private string $number;
+    
+.
+.
+.    
+
+class Author
+{
+    #[XmlElement]
+    private string $name;
+
+    #[XmlElement]
+    private ?string $birthday = null;
+
+    #[XmlElement]
+    private ?string $email = null;
+
+    private ?Address $address = null;
+    
+.
+.
+.    
+
 #[XmlRootElement("livros")]
 class Book
 {
@@ -64,13 +98,11 @@ class Book
     private String $name;
 
     #[XmlPhpTypeAdapter(DateBrAdapter::class)]
-    private DateTime $date;
+    private DateTime $data;
 
-    #[XmlElement("author_data")]
-    private Author $author;
-
-    #[XmlTransient]
-    private string $address;
+    /**@var array<Author> */
+    #[XmlElement("authors")]
+    private array $authors;
     
     ...
 ```
@@ -80,11 +112,22 @@ class Book
 <?php
 ...
 
+$address = new Address();
+$address->setAddress("Rua 10");
+$address->setNumber("123");
+$address->setFullAddress("123");
+
+$author = new Author();
+$author->setName("Jeidison Farias");
+$author->setBirthday("");
+$author->setEmail("");
+$author->setAddress($address);
+
 $book = new Book();
 $book->setId(1);
 $book->setName("PHP XML Binding");
-$book->setAuthor($author);
-$book->setDate(new DateTime());
+$book->setAuthors([$author]);
+$book->setData(new DateTime());
 $book->setAddress($address)
 
 $paxb = PAXB::createMarshaller();
@@ -101,13 +144,13 @@ echo $xml;
 <livros identificador="1">
     <nome>PHP XML Binding</nome>
     <date>10/09/2021</date>
-    <author_data>
+    <authors>
         <name>Jeidison Farias</name>
         <address>
             <number>123</number>
             <street>Rua 10</street>
         </address>
-    </author_data>
+    </authors>
 </livros>
 ```
 
