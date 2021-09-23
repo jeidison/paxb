@@ -67,7 +67,6 @@ class Unmarshaller implements IUnmarshaller
             $reflectionProperty->setValue($object, $value);
         }
 
-        dd($object);
         return $object;
     }
 
