@@ -31,6 +31,17 @@ RUN docker-php-ext-configure intl \
  && docker-php-ext-enable opcache \
  && docker-php-ext-install soap
 
+#PHP XDebug
+RUN pecl install xdebug \
+  && docker-php-ext-enable xdebug \
+  && echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+  && echo "xdebug.remote_autostart=off" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+  && echo "xdebug.client_port=9001" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+  && echo "xdebug.remote_handler=dbgp" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+  && echo "xdebug.discover_client_host=0" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+  && echo "xdebug.idekey=paxb-php" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+  && echo "xdebug.client_host=192.168.0.106" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
 # Group and User
 RUN addgroup -g 1000 -S g-www \
  && adduser -u 1000 -D -S -G g-www u-www

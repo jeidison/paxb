@@ -3,30 +3,18 @@
 namespace Jeidison\PAXB\Tests\Unit;
 
 use Jeidison\PAXB\PAXB;
-use Jeidison\PAXB\Tests\Resources\Beans\Book;
+use Jeidison\PAXB\Tests\Resources\Beans\DiplomaDigital\Diploma;
 use Jeidison\PAXB\Tests\TestCase;
 
 class UnMarshallerTest extends TestCase
 {
     public function testUnmarshal()
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>
-<livros identificador="1">
-    <nome>PHP XML Binding</nome>
-    <date>10/09/2021</date>
-    <author_data>
-        <name>Jeidison Farias</name>
-        <email>jeidison.farias@gmail.com</email>
-        <address>
-            <number>123</number>
-            <street>Rua 10</street>
-        </address>
-    </author_data>
-</livros>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Diploma xmlns="http://portal.mec.gov.br/diplomadigital/arquivos-em-xsd" xmlns:ns2="http://www.w3.org/2000/09/xmldsig#"><infDiploma versao="1.01" id="VDip19854624862927462352788926849191681580868708"><DadosDiploma id="Dip19854624862927462352788926849191681580868708"><Diplomado><ID>1111111</ID><Nome>João Carlos</Nome><Sexo>M</Sexo><Nacionalidade>Brasil</Nacionalidade><Naturalidade><CodigoMunicipio>4205407</CodigoMunicipio><NomeMunicipio>Florianopolis</NomeMunicipio><UF>SC</UF></Naturalidade><CPF>01111111111</CPF><RG><Numero>11111111</Numero><UF>SC</UF></RG><DataNascimento>1997-12-02</DataNascimento></Diplomado><DadosCurso><NomeCurso>Ciências da Computação</NomeCurso><CodigoCursoEMEC>14217</CodigoCursoEMEC><NomeHabilitacao>Bacharelado em Ciências da Computação</NomeHabilitacao><Modalidade>Presencial</Modalidade><TituloConferido><Titulo>Médico</Titulo></TituloConferido><GrauConferido>Bacharelado</GrauConferido><EnderecoCurso><Logradouro>Rua Roberto Sampaio Gonzaga, s/n</Logradouro><Complemento>Campus Universitário Prof. João David Ferreira Lima</Complemento><Bairro>Trindade</Bairro><CodigoMunicipio>4205407</CodigoMunicipio><NomeMunicipio>Florianópolis</NomeMunicipio><UF>SC</UF><CEP>88040900</CEP></EnderecoCurso><Autorizacao><Tipo>Parecer</Tipo><Numero>1153</Numero><Data>1976-12-17</Data></Autorizacao><Reconhecimento><Tipo>Portaria</Tipo><Numero>921</Numero><Data>2018-12-27</Data><DataPublicacao>2018-12-28</DataPublicacao></Reconhecimento></DadosCurso><IesEmissora><Nome>UNIVERSIDADE FEDERAL DE SANTA CATARINA</Nome><CodigoMEC>585</CodigoMEC><CNPJ>83899526000182</CNPJ><Endereco><Logradouro>Campus Universitário</Logradouro><Numero>s/n</Numero><Bairro>Trindade</Bairro><CodigoMunicipio>4205407</CodigoMunicipio><NomeMunicipio>Florianópolis</NomeMunicipio><UF>SC</UF><CEP>88040090</CEP></Endereco><Credenciamento><Tipo>Lei Federal</Tipo><Numero>3849</Numero><Data>1960-12-18</Data><DataPublicacao>1960-12-21</DataPublicacao><SecaoPublicacao>1</SecaoPublicacao><PaginaPublicacao>16173</PaginaPublicacao></Credenciamento><Recredenciamento><Tipo>Portaria</Tipo><Numero>134</Numero><Data>2013-02-27</Data><DataPublicacao>2013-02-28</DataPublicacao><SecaoPublicacao>1</SecaoPublicacao><PaginaPublicacao>32</PaginaPublicacao></Recredenciamento><Mantenedora><RazaoSocial>UNIVERSIDADE FEDERAL DE SANTA CATARINA</RazaoSocial><CNPJ>83899526000182</CNPJ><Endereco><Logradouro>Campus Universitário</Logradouro><Numero>s/n</Numero><Bairro>Trindade</Bairro><CodigoMunicipio>4205407</CodigoMunicipio><NomeMunicipio>Florianópolis</NomeMunicipio><UF>SC</UF><CEP>88040090</CEP></Endereco></Mantenedora></IesEmissora></DadosDiploma><DadosRegistro id="RDip19854624862927462352788926849191681580868708"><IesRegistradora><Nome>UNIVERSIDADE FEDERAL DE SANTA CATARINA</Nome><CodigoMEC>585</CodigoMEC><CNPJ>83899526000182</CNPJ><Endereco><Logradouro>Campus Universitário</Logradouro><Numero>s/n</Numero><Bairro>Trindade</Bairro><CodigoMunicipio>4205407</CodigoMunicipio><NomeMunicipio>Florianópolis</NomeMunicipio><UF>SC</UF><CEP>88040090</CEP></Endereco><Credenciamento><Tipo>Lei Federal</Tipo><Numero>3849</Numero><Data>1960-12-18</Data><DataPublicacao>1960-12-21</DataPublicacao><SecaoPublicacao>1</SecaoPublicacao><PaginaPublicacao>16173</PaginaPublicacao></Credenciamento><Recredenciamento><Tipo>Portaria</Tipo><Numero>134</Numero><Data>2013-02-27</Data><DataPublicacao>2013-02-28</DataPublicacao><SecaoPublicacao>1</SecaoPublicacao><PaginaPublicacao>32</PaginaPublicacao></Recredenciamento><Mantenedora><RazaoSocial>UNIVERSIDADE FEDERAL DE SANTA CATARINA</RazaoSocial><CNPJ>83899526000182</CNPJ><Endereco><Logradouro>Campus Universitário</Logradouro><Numero>s/n</Numero><Bairro>Trindade</Bairro><CodigoMunicipio>4205407</CodigoMunicipio><NomeMunicipio>Florianópolis</NomeMunicipio><UF>SC</UF><CEP>88040090</CEP></Endereco></Mantenedora></IesRegistradora><LivroRegistro><LivroRegistro>CTC/1111</LivroRegistro><NumeroFolhaDoDiploma>111</NumeroFolhaDoDiploma><NumeroSequenciaDoDiploma>111</NumeroSequenciaDoDiploma><ProcessoDoDiploma>23080.111111/2019-22</ProcessoDoDiploma><DataColacaoGrau>2019-12-10</DataColacaoGrau><DataExpedicaoDiploma>2019-12-10</DataExpedicaoDiploma><DataRegistroDiploma>2019-12-10</DataRegistroDiploma><ResponsavelRegistro><Nome>Henrique Paulo</Nome><CPF>01234567890</CPF><IDouNumeroMatricula>111111</IDouNumeroMatricula></ResponsavelRegistro></LivroRegistro><IdDocumentacaoAcademica>ReqDip19854624862927462352788926849191681580868708</IdDocumentacaoAcademica><Seguranca><CodigoValidacao>585.585.ebe0f647d357</CodigoValidacao></Seguranca></DadosRegistro></infDiploma></Diploma>';
 
-        $unmarshaller = PAXB::createUnmarshal(Book::class);
-        $book = $unmarshaller->unmarshal($xml);
+        $unmarshaller = PAXB::createUnmarshal(Diploma::class);
+        $diploma = $unmarshaller->unmarshal($xml);
 
-        $this->assertNotNull($book);
+        $this->assertNotNull($diploma);
     }
 }

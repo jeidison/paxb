@@ -64,7 +64,8 @@ class Unmarshaller implements IUnmarshaller
                 $value = $this->getPropertyValue($reflectionProperty, $dom, $tagName);
             }
 
-            $reflectionProperty->setValue($object, $value);
+            if ($value != null)
+                $reflectionProperty->setValue($object, $value);
         }
 
         return $object;
@@ -94,6 +95,9 @@ class Unmarshaller implements IUnmarshaller
             if ($xmlElement->childNodes->count() > 1)
                 return $this->unmarshallChild($reflectionProperty, $dom, $xmlElement);
 
+            if ($xmlElement->childNodes->count() > 0 && $xmlElement->childNodes[0]->nodeName != "#text")
+                return $this->unmarshallChild($reflectionProperty, $dom, $xmlElement);
+
             if ($xmlElement->hasChildNodes()) {
                 $value = $xmlElement->childNodes[0]->nodeValue;
             } else {
@@ -112,6 +116,16 @@ class Unmarshaller implements IUnmarshaller
     private function unmarshallChild(ReflectionProperty $reflectionProperty, DOMDocument $dom, DOMElement $xmlElement)
     {
         $type = $reflectionProperty->getType();
+        if ($type->isBuiltin()) {
+            if ($xmlElement->hasChildNodes()) {
+                $value = $xmlElement->childNodes[0]->nodeValue;
+            } else {
+                $value = $xmlElement->nodeValue;
+            }
+
+            return $value;
+        }
+
         $object = new ($type->getName());
 
         foreach ($xmlElement->childNodes as $childNode) {
@@ -124,15 +138,16 @@ class Unmarshaller implements IUnmarshaller
             $newReflectionProperty = $reflectionObject->getProperty($propertyName);
             $newReflectionProperty->setAccessible(true);
 
-            $value = $this->getPropertyValue($newReflectionProperty, $dom, $childNode->nodeName);
+            $value = $this->getPropertyValue($newReflectionProperty, $xmlElement->ownerDocument, $childNode->nodeName);
 
-            $newReflectionProperty->setValue($object, $value);
+            if ($value != null)
+                $newReflectionProperty->setValue($object, $value);
         }
 
         return $object;
     }
 
-    private function normalizeValueProperty(ReflectionProperty $reflectionProperty, string $value): string|object
+    private function normalizeValueProperty(ReflectionProperty $reflectionProperty, string $value): string|object|null
     {
         $attributes = $reflectionProperty->getAttributes();
         if (count($attributes) <= 0)
