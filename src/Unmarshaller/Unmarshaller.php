@@ -2,8 +2,6 @@
 
 namespace Jeidison\PAXB\Unmarshaller;
 
-use DOMDocument;
-use DOMElement;
 use Jeidison\PAXB\Attributes\Adapters\XmlAdapter;
 use Jeidison\PAXB\Attributes\Adapters\XmlPhpTypeAdapter;
 use Jeidison\PAXB\Attributes\Element;
@@ -15,10 +13,13 @@ use Jeidison\PAXB\Exception\UnmarshalException;
 use ReflectionObject;
 use ReflectionProperty;
 use stdClass;
+use SimpleXMLElement;
+use ReflectionClass;
 
 class Unmarshaller implements IUnmarshaller
 {
     use MarshallerCommons;
+
 
     public function __construct(private string $typeObject = stdClass::class)
     {}
@@ -29,39 +30,27 @@ class Unmarshaller implements IUnmarshaller
             $this->typeObject = $typeObject;
     }
 
-    protected function buildDom(): DOMDocument
-    {
-        return new DOMDocument();
-    }
-
     public function unmarshal(string $xml): object
     {
-        $object = new $this->typeObject;
+        $object    = new $this->typeObject;
+        $objectXml = $this->xmlToObject($xml);
 
-        $dom = $this->buildDom();
-        $dom->loadXML($xml);
-
-        $elementRoot    = $dom->documentElement;
-        $xmlRootElement = $elementRoot->nodeName;
-
-        $reflectionObject = new ReflectionObject($object);
-        $attributes       = $reflectionObject->getAttributes();
-
+        $xmlRootElement         = $objectXml->getName();
+        $reflectionObject       = new ReflectionObject($object);
+        $attributes             = $reflectionObject->getAttributes();
         $xmlRootElementInObject = $this->retrieveRootElement($attributes, $reflectionObject->getShortName());
 
         if ($xmlRootElementInObject !== $xmlRootElement)
-            throw new UnmarshalException("XmlRootElement da classe é diferente da tag root do XML.");
+            throw new UnmarshalException("'XmlRootElement' da classe é diferente da tag root do XML.");
 
-        $reflectionProperties = $reflectionObject->getProperties();
-        foreach ($reflectionProperties as $reflectionProperty) {
+        foreach ($reflectionObject->getProperties() as $reflectionProperty) {
             $reflectionProperty->setAccessible(true);
-
             if ($this->isAttribute($reflectionProperty)) {
-                $attributeXmlName = $this->getAttributeXmlName($reflectionProperty);
-                $value = $this->getAttributeValue($dom, $xmlRootElement, $attributeXmlName);
+                $value = $this->getAttributeValue($objectXml, $reflectionProperty);
+                if ($value != null)
+                    $value = $this->normalizeValueProperty($reflectionProperty, $value);
             } else {
-                $tagName = $this->getTagName($reflectionProperty);
-                $value = $this->getPropertyValue($reflectionProperty, $dom, $tagName);
+                $value = $this->getPropertyValue($objectXml, $reflectionProperty);
             }
 
             if ($value != null)
@@ -71,84 +60,45 @@ class Unmarshaller implements IUnmarshaller
         return $object;
     }
 
-    private function getAttributeValue(DOMDocument $dom, string $elementName, string $attributeXmlName): ?string
+    private function getPropertyValue(SimpleXMLElement $objectXml, ReflectionProperty $reflectionProperty): string|null|object
     {
-        $xmlElements = $dom->getElementsByTagName($elementName);
-        foreach ($xmlElements as $xmlElement) {
-            foreach ($xmlElement->attributes as $attribute) {
-                if ($attribute->nodeName === $attributeXmlName) {
-                    return $attribute->value;
-                }
-            }
-        }
+        $tagName = $this->getTagName($reflectionProperty);
+        if (!property_exists($objectXml, $tagName))
+            return null;
 
-        return null;
-    }
+        $valueTag      = $objectXml->$tagName;
+        $isObjectChild = $this->isObjectChild($reflectionProperty, $valueTag);
+        if (!$isObjectChild)
+            return $valueTag;
 
-    private function getPropertyValue(ReflectionProperty $reflectionProperty, DOMDocument $dom, string $elementName): string|null|object
-    {
-        $xmlElements = $dom->getElementsByTagName($elementName);
-        foreach ($xmlElements as $xmlElement) {
-            if ($xmlElement->nodeName !== $elementName)
-                continue;
+        $typeChild   = $reflectionProperty->getType()->getName();
+        $objectChild = new $typeChild;
 
-            if ($xmlElement->childNodes->count() > 1)
-                return $this->unmarshallChild($reflectionProperty, $dom, $xmlElement);
+        $reflectionObject = new ReflectionObject($objectChild);
+        foreach ($reflectionObject->getProperties() as $property) {
+            $property->setAccessible(true);
 
-            if ($xmlElement->childNodes->count() > 0 && $xmlElement->childNodes[0]->nodeName != "#text")
-                return $this->unmarshallChild($reflectionProperty, $dom, $xmlElement);
-
-            if ($xmlElement->hasChildNodes()) {
-                $value = $xmlElement->childNodes[0]->nodeValue;
+            if ($this->isAttribute($property)) {
+                $value = $this->getAttributeValue($valueTag, $property);
             } else {
-                $value = $xmlElement->nodeValue;
+                $value = $this->getPropertyValue($valueTag, $property);
             }
-
-            if ($value === null)
-                return null;
-
-            return $this->normalizeValueProperty($reflectionProperty, $value);
-        }
-
-        return null;
-    }
-
-    private function unmarshallChild(ReflectionProperty $reflectionProperty, DOMDocument $dom, DOMElement $xmlElement)
-    {
-        $type = $reflectionProperty->getType();
-        if ($type->isBuiltin()) {
-            if ($xmlElement->hasChildNodes()) {
-                $value = $xmlElement->childNodes[0]->nodeValue;
-            } else {
-                $value = $xmlElement->nodeValue;
-            }
-
-            return $value;
-        }
-
-        $object = new ($type->getName());
-
-        foreach ($xmlElement->childNodes as $childNode) {
-            if (empty(trim($childNode->nodeValue)))
-                continue;
-
-            $reflectionObject = new ReflectionObject($object);
-            $propertyName = $this->getPropertyName($reflectionObject, $childNode->nodeName);
-
-            $newReflectionProperty = $reflectionObject->getProperty($propertyName);
-            $newReflectionProperty->setAccessible(true);
-
-            $value = $this->getPropertyValue($newReflectionProperty, $xmlElement->ownerDocument, $childNode->nodeName);
 
             if ($value != null)
-                $newReflectionProperty->setValue($object, $value);
+                $value = $this->normalizeValueProperty($property, $value);
+
+            if ($value != null)
+                $property->setValue($objectChild, $value);
         }
 
-        return $object;
+        return $objectChild;
     }
 
-    private function normalizeValueProperty(ReflectionProperty $reflectionProperty, string $value): string|object|null
+    private function normalizeValueProperty(ReflectionProperty $reflectionProperty, mixed $value): string|object|null
     {
+        if ($value instanceof SimpleXMLElement)
+            $value = (string)$value;
+
         $attributes = $reflectionProperty->getAttributes();
         if (count($attributes) <= 0)
             return $value;
@@ -169,20 +119,43 @@ class Unmarshaller implements IUnmarshaller
         return $value;
     }
 
-    private function getPropertyName(ReflectionObject $reflectionObject, string $elementName): string
+    private function getAttributeValue(SimpleXMLElement $objectXml, ReflectionProperty $reflectionProperty): ?string
     {
-        foreach ($reflectionObject->getProperties() as $reflectionProperty) {
-            $reflectionProperty->setAccessible(true);
-            foreach($reflectionProperty->getAttributes() as $reflectionAttribute) {
-                $attribute = $reflectionAttribute->newInstance();
-                if(!$attribute instanceof Element)
-                    continue;
+        $attributeXmlName = $this->getAttributeXmlName($reflectionProperty);
+        $attributesXml    = json_decode(json_encode($objectXml->attributes()));
 
-                if ($elementName === $attribute->getName())
-                    return $reflectionProperty->getName();
-            }
-        }
+        if (!property_exists($attributesXml, '@attributes'))
+            return null;
 
-        return $elementName;
+        $attributesXml = $attributesXml->{'@attributes'};
+        if (!property_exists($attributesXml, $attributeXmlName))
+            return null;
+
+        return $attributesXml->$attributeXmlName;
     }
+
+    private function xmlToObject(string $xml): SimpleXMLElement
+    {
+        return simplexml_load_string($xml);
+    }
+
+    private function isObjectChild(ReflectionProperty $reflectionProperty, object $objectInstance): bool
+    {
+        $reflectionType = $reflectionProperty->getType();
+        if ($reflectionType === null)
+            return false;
+
+        if ($reflectionType->isBuiltin())
+            return false;
+
+        $reflectionClass = new ReflectionClass($reflectionType->getName());
+        if ($reflectionClass->isInternal())
+            return false;
+
+        if (!$reflectionClass->isInstantiable())
+            return false;
+
+        return true;
+    }
+
 }
