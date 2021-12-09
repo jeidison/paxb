@@ -193,8 +193,8 @@ class Marshaller implements IMarshaller
                 $root->setAttribute($attributeXmlName, $tagValue);
             } elseif (is_array($tagValue)) {
                 $tagName = $this->getTagName($reflectionProperty);
-                $tagElement = $dom->createElement($tagName);
                 foreach ($tagValue as $value) {
+                    $tagElement = $dom->createElement($tagName);
                     if (is_object($value)) {
                         $reflectionObject = new ReflectionObject($value);
                         $childNode = $this->reflectionProperties($reflectionObject, $value, $dom, $tagElement);
@@ -208,7 +208,9 @@ class Marshaller implements IMarshaller
                         $root->appendChild($child);
                     }
                 }
-                $root->appendChild($tagElement);
+
+                if (isset($tagElement))
+                    $root->appendChild($tagElement);
             } else {
                 $tagName = $this->getTagName($reflectionProperty);
                 $child   = $dom->createElement($tagName, $tagValue);
