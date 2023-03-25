@@ -2,7 +2,6 @@
 
 namespace Jeidison\PAXB\Xsd;
 
-use Exception;
 use Jeidison\PAXB\Exception\Xsd2PhpException;
 use Jeidison\PAXB\Xsd\ClassBuilder\ExtractorType;
 use Jeidison\PAXB\Xsd\Converter\ComplexTypeClassConverter;
@@ -30,9 +29,11 @@ class Xsd2Php
             throw new Xsd2PhpException("Path para salvar as classes inválido.");
 
         $xsdAsString  = str_replace('xs:', '', file_get_contents($xsd2PhpParameter->pathRootXsd));
+        $xsdAsString = str_replace('ds:', '', $xsdAsString);
         $xsd          = new SimpleXMLElement($xsdAsString);
         $this->xsds[] = $xsd;
         $this->loadIncludes($xsd, $xsd2PhpParameter);
+        $this->loadImports($xsd2PhpParameter);
 
         $this->extractSimpleTypeData();
         $this->extractComplexTypeData();
@@ -51,8 +52,20 @@ class Xsd2Php
             list($className, $strClass) = $generatorStrClass;
             file_put_contents($xsd2PhpParameter->pathStoreClasses."/$className.php", $strClass);
         }
+    }
 
-        return ;
+    protected function loadImports(Xsd2PhpParameter $xsd2PhpParameter): ?SimpleXMLElement
+    {
+        foreach ($this->xsds as $xsd) {
+            $xsdAsString = $this->loadImport($xsd, $xsd2PhpParameter);
+            if ($xsdAsString == null)
+                continue;
+
+            $xsdImported  = new SimpleXMLElement($xsdAsString);
+            $this->xsds[] = $xsdImported;
+        }
+
+        return $xsdImported ?? null;
     }
 
     protected function loadIncludes(SimpleXMLElement $xsd, Xsd2PhpParameter $xsd2PhpParameter): SimpleXMLElement
@@ -62,7 +75,25 @@ class Xsd2Php
         $this->xsds[] = $xsdImported;
         if (str_contains($xsdAsString, 'schemaLocation="'))
             return $this->loadIncludes($xsdImported, $xsd2PhpParameter);
+
         return $xsdImported;
+    }
+
+    protected function loadImport(SimpleXMLElement $xsd, Xsd2PhpParameter $xsd2PhpParameter): ?string
+    {
+        if (!property_exists($xsd, 'import'))
+            return null;
+
+        $attributes = $this->getAttributesAsObject($xsd->import);
+        if ($attributes == null)
+            return null;
+
+        if (!property_exists($attributes, 'schemaLocation'))
+            return null;
+
+        $xsdAsString = file_get_contents(dirname($xsd2PhpParameter->pathRootXsd) . DIRECTORY_SEPARATOR . $attributes->schemaLocation);
+        $xsdAsString = str_replace('ds:', '', $xsdAsString);
+        return str_replace('xs:', '', $xsdAsString);
     }
 
     protected function loadInclude(SimpleXMLElement $xsd, Xsd2PhpParameter $xsd2PhpParameter): ?string
@@ -78,6 +109,7 @@ class Xsd2Php
             return null;
 
         $xsdAsString = file_get_contents(dirname($xsd2PhpParameter->pathRootXsd) . DIRECTORY_SEPARATOR . $attributes->schemaLocation);
+        $xsdAsString = str_replace('ds:', '', $xsdAsString);
         return str_replace('xs:', '', $xsdAsString);
     }
 
@@ -92,9 +124,16 @@ class Xsd2Php
     protected function extractComplexTypeData()
     {
         foreach ($this->xsds as $xsd) {
-            $complexTypes          = ExtractorType::instance()->complexTypeData($xsd, $this->simpleTypeData);
+            $complexTypes          = ExtractorType::instance()->groupData($xsd, $this->simpleTypeData);
             $this->complexTypeData = array_merge($this->complexTypeData, $complexTypes);
         }
+
+        foreach ($this->xsds as $xsd) {
+            $complexTypes          = ExtractorType::instance()->complexTypeData($xsd, $this->simpleTypeData, $this->complexTypeData);
+            $this->complexTypeData = array_merge($this->complexTypeData, $complexTypes);
+        }
+
+
     }
 
     protected function processRootElement()

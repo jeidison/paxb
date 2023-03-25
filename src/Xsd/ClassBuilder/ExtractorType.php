@@ -11,13 +11,14 @@ class ExtractorType
 {
     private array $simpleTypeData = [];
     private array $complexTypeData = [];
+    private array $groupData = [];
 
     public static function instance(): self
     {
         return new self();
     }
 
-    public function complexTypeData(SimpleXMLElement $xsd, array &$simpleTypeData): array
+    public function complexTypeData(SimpleXMLElement $xsd, array &$simpleTypeData, &$complexTypeData): array
     {
         if ($xsd->complexType->count() <= 0)
             return [];
@@ -27,14 +28,13 @@ class ExtractorType
             $complexType->type       = (string)$node['name'];
             $complexType->annotation = (string)$node?->annotation?->documentation ?? '';
 
-            $nodeSequence = $node->sequence;
-            if (isset($nodeSequence->choice)) {
-                $strSequence  = str_replace('<choice>', '', $nodeSequence->asXML());
-                $strSequence  = str_replace('</choice>', '', $strSequence);
-                $nodeSequence = new SimpleXMLElement($strSequence);
-            }
+            $regex = '/(\<choice?.).*>/m';
+            $strSequence = preg_replace($regex, '', $node->asXML());
+            $strSequence  = str_replace('</choice>', '', $strSequence);
+            $nodeSequence = new SimpleXMLElement($strSequence);
+            $nodeSequence = isset($nodeSequence->sequence) ? $nodeSequence->sequence : $nodeSequence;
 
-            if ($nodeSequence->element == null)
+            if ($nodeSequence->element == null || $nodeSequence->group == null)
                 continue;
 
             foreach ($node->attribute as $nodeAttributes) {
@@ -42,10 +42,14 @@ class ExtractorType
                 $complexType->xmlAttributes[] = $xmlAttribute;
             }
 
-            foreach ($nodeSequence->element as $xmlElement) {
-                if (str_contains($xmlElement->asXML(), ' ref="'))
-                    continue;
+            foreach ($nodeSequence->group as $xmlElement) {
+                $xmlAttributes = $this->getAttributesAsObject($xmlElement);
+                $type = $xmlAttributes->ref;
 
+                $complexType->xmlElements = $complexTypeData[$type]->xmlElements;
+            }
+
+            foreach ($nodeSequence->element as $xmlElement) {
                 if ($element = $this->extractElement($xmlElement, $simpleTypeData))
                     $complexType->xmlElements[] = $element;
             }
@@ -56,9 +60,52 @@ class ExtractorType
         return $this->complexTypeData;
     }
 
+    public function groupData(SimpleXMLElement $xsd, array &$simpleTypeData): array
+    {
+        if ($xsd->group->count() <= 0)
+            return [];
+
+        foreach ($xsd->group as $node) {
+            $group             = new stdClass();
+            $group->type       = (string)$node['name'];
+            $group->annotation = (string)$node?->annotation?->documentation ?? '';
+
+            $regex = '/(\<choice?.).*>/m';
+            $strSequence = preg_replace($regex, '', $node->asXML());
+            $strSequence  = str_replace('</choice>', '', $strSequence);
+            $nodeSequence = new SimpleXMLElement($strSequence);
+            $nodeSequence = isset($nodeSequence->sequence) ? $nodeSequence->sequence : $nodeSequence;
+
+            if ($nodeSequence->element == null)
+                continue;
+
+            foreach ($node->attribute as $nodeAttributes) {
+                $xmlAttribute = $this->extractAttribute($nodeAttributes, $simpleTypeData);
+                $group->xmlAttributes[] = $xmlAttribute;
+            }
+
+            foreach ($nodeSequence->element as $xmlElement) {
+                if (str_contains($xmlElement->asXML(), ' ref="'))
+                    continue;
+
+                if ($element = $this->extractElementGroup($xmlElement, $simpleTypeData)) {
+                    $group->xmlElements[] = $element;
+                }
+            }
+
+            $this->groupData[$group->type] = $group;
+        }
+
+        return $this->groupData;
+    }
+
     protected function getType(object $xmlAttributes, SimpleXMLElement $xmlElement, array &$simpleTypeData): string
     {
         $type = $xmlAttributes->type ?? "";
+        if ($typeCasted = PrimitiveTypes::hasCast($type)) {
+            return $typeCasted;
+        }
+
         if (isset($simpleTypeData[$type]))
             return $simpleTypeData[$type]->restriction ?? "";
 
@@ -88,6 +135,20 @@ class ExtractorType
         return $simpleTypeNew->restriction ?? "";
     }
 
+    private function extractElementGroup(SimpleXMLElement $xmlElement, array &$simpleTypeData): ?stdClass
+    {
+        $xmlAttributes = $this->getAttributesAsObject($xmlElement);
+
+        $element             = new stdClass();
+        $element->minOccurs  = $xmlAttributes->minOccurs ?? '';
+        $element->maxOccurs  = $xmlAttributes->maxOccurs ?? '';
+        $element->name       = $xmlAttributes->name ?? '';
+        $element->annotation = (string)$xmlElement?->annotation?->documentation ?? '';
+        $element->type       = $this->getType($xmlAttributes, $xmlElement, $simpleTypeData);
+
+        return $element;
+    }
+
     private function extractElement(SimpleXMLElement $xmlElement, array &$simpleTypeData): ?stdClass
     {
         $xmlAttributes = $this->getAttributesAsObject($xmlElement);
@@ -95,7 +156,7 @@ class ExtractorType
         if (isset($xmlElement->complexType)) {
             $complexType             = new stdClass();
             $complexType->type       = (string)$xmlElement['name'];
-            $complexType->annotation = (string)$xmlElement?->annotation?->documentation ?? '';
+            $complexType->annotation = (string)$xmlElement->annotation?->documentation ?? '';
 
             $nodeSequence = $xmlElement->complexType->sequence;
             if (isset($nodeSequence->choice)) {
@@ -111,8 +172,8 @@ class ExtractorType
                 $xmlAttributes->type    = $complexType->type;
                 $nodeSequenceAttributes = $this->getAttributesAsObject($nodeSequence);
                 if ($nodeSequenceAttributes != null) {
-                    $xmlAttributes->minOccurs = $nodeSequenceAttributes?->minOccurs ?? '';
-                    $xmlAttributes->maxOccurs = $nodeSequenceAttributes?->maxOccurs ?? '';
+                    $xmlAttributes->minOccurs = $nodeSequenceAttributes->minOccurs ?? '';
+                    $xmlAttributes->maxOccurs = $nodeSequenceAttributes->maxOccurs ?? '';
                 }
 
                 if ($elementExtracted = $this->extractElement($element, $simpleTypeData))
@@ -142,7 +203,7 @@ class ExtractorType
 
         $attributeXml              = new stdClass();
         $attributeXml->name        = (string)$xmlAttributes->name;
-        $attributeXml->required    = (string)$xmlAttributes->{'use'} == 'required';
+        $attributeXml->required    = isset($xmlAttributes->{'use'}) && (string)$xmlAttributes->{'use'} == 'required';
         $attributeXml->annotation  = (string)$elementXmlAttribute?->annotation?->documentation ?? '';
         $simpleType                = $elementXmlAttribute?->simpleType;
         $attributeXml->type        = $this->getType($xmlAttributes, $elementXmlAttribute, $simpleTypeData);
@@ -161,9 +222,9 @@ class ExtractorType
             $simpleType->annotation = (string)$node?->annotation?->documentation ?? '';
 
             $simpleType->restriction = (string)$node->restriction['base'];
-            $simpleType->minLength   = (string)$node?->restriction?->minLength['value'] ?? '';
-            $simpleType->maxLength   = (string)$node?->restriction?->maxLength['value'] ?? '';
-            $simpleType->pattern     = (string)$node?->restriction?->pattern['value']   ?? '';
+            $simpleType->minLength   = isset($node?->restriction?->minLength['value']) ? (string)$node?->restriction?->minLength['value'] : '';
+            $simpleType->maxLength   = isset($node?->restriction?->maxLength['value']) ? (string)$node?->restriction?->maxLength['value'] : '';
+            $simpleType->pattern     = isset($node?->restriction?->pattern['value']) ? (string)$node?->restriction?->pattern['value'] : '';
 
             $this->simpleTypeData[$simpleType->type] = $simpleType;
         }

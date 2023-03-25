@@ -34,7 +34,7 @@ class PropertyTemplate
 
     public function getType(): string
     {
-        return $this->type;
+        return empty($this->type) ? 'mixed' : $this->type;
     }
 
     public function setType(string $type): PropertyTemplate

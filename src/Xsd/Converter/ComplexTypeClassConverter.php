@@ -9,6 +9,7 @@ use Jeidison\PAXB\Attributes\XmlRootElement;
 use Jeidison\PAXB\Xsd\ClassBuilder\AttributeTemplate;
 use Jeidison\PAXB\Xsd\ClassBuilder\ClassBuilder;
 use Jeidison\PAXB\Xsd\ClassBuilder\PropertyTemplate;
+use Jeidison\PAXB\Xsd\PrimitiveTypes;
 
 class ComplexTypeClassConverter
 {
@@ -52,11 +53,16 @@ class ComplexTypeClassConverter
     {
         $attribute = $this->buildAttribute($xmlElement, $isXmlAttribute);
         $name = $xmlElement->name;
+
         if ($name != strtoupper($name))
             $name = lcfirst($xmlElement->name);
 
         $propertyTemplate = new PropertyTemplate();
-        $propertyTemplate->setType($xmlElement->type);
+        $type = $xmlElement->type;
+        if ($typeCast = PrimitiveTypes::hasCast($xmlElement->type))
+            $type = $typeCast;
+
+        $propertyTemplate->setType($type);
         $propertyTemplate->setName($name);
         $propertyTemplate->addAttribute($attribute);
 

@@ -168,6 +168,24 @@ $book = $unmarshaller->unmarshal($xml);
 ```
 <hr>
 
+## Transformando XSD em classes PHP [WIP]
+
+```php
+<?php
+...
+
+$parameter = new Xsd2PhpParameter;
+$parameter->pathRootXsd = '';
+$parameter->withSetters = true;
+$parameter->withGetters = true;
+$parameter->namespace = '';
+$parameter->pathStoreClasses = '';
+
+Xsd2Php::instance()->convert($parameter);
+
+```
+<hr>
+
 Esse projeto é inspirado no [JAXB](https://docs.oracle.com/javase/tutorial/jaxb/intro/index.html) da linguagem Java.
 
 ## Autor
