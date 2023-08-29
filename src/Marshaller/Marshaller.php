@@ -185,7 +185,7 @@ class Marshaller implements IMarshaller
             }
 
             $tagValue = $this->getTagValue($reflectionProperty, $paxbObject);
-            if (empty($tagValue))
+            if ($tagValue == '' || $tagValue === null)
                 continue;
 
             if ($this->isAttribute($reflectionProperty)) {
