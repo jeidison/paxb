@@ -130,32 +130,82 @@ class Marshaller implements IMarshaller
         $attributesRoot   = $reflectionObject->getAttributes();
         $rootElement      = $this->retrieveRootElement($attributesRoot, $reflectionObject->getShortName());
         $rootNamespace    = $this->retrieveNamespaceRootElement($attributesRoot);
+        $rootElementInfo  = $this->retrieveRootElementInfo($attributesRoot);
 
         $dom = $this->buildDom();
-        if ($rootNamespace !== null) {
-            $root = $dom->createElementNS($rootNamespace, $rootElement);
-        } else {
-            $root = $dom->createElement($rootElement);
+        
+        // Create root element with namespace and prefix if provided
+        $qualifiedName = $rootElement;
+        if ($rootElementInfo && $rootElementInfo->namespacePrefix && $rootNamespace) {
+            $qualifiedName = $rootElementInfo->namespacePrefix . ':' . $rootElement;
         }
-        $root = $this->reflectionProperties($reflectionObject, $paxbObject, $dom, $root);
+        
+        if ($rootNamespace !== null) {
+            $root = $dom->createElementNS($rootNamespace, $qualifiedName);
+        } else {
+            $root = $dom->createElement($qualifiedName);
+        }
+        
+        // Add namespace declarations
+        if ($rootElementInfo && !empty($rootElementInfo->namespaceDeclarations)) {
+            foreach ($rootElementInfo->namespaceDeclarations as $prefix => $uri) {
+                $attrName = $prefix === '' ? 'xmlns' : 'xmlns:' . $prefix;
+                $root->setAttributeNS('http://www.w3.org/2000/xmlns/', $attrName, $uri);
+            }
+        }
+        
+        // Add root attributes (like xsi:schemaLocation)
+        if ($rootElementInfo && !empty($rootElementInfo->rootAttributes)) {
+            foreach ($rootElementInfo->rootAttributes as $attrName => $attrValue) {
+                if (str_contains($attrName, ':')) {
+                    [$prefix, $localName] = explode(':', $attrName, 2);
+                    // Find namespace URI for the prefix
+                    $nsUri = $rootElementInfo->namespaceDeclarations[$prefix] ?? null;
+                    if ($nsUri) {
+                        $root->setAttributeNS($nsUri, $attrName, $attrValue);
+                    } else {
+                        $root->setAttribute($attrName, $attrValue);
+                    }
+                } else {
+                    $root->setAttribute($attrName, $attrValue);
+                }
+            }
+        }
+        
+        $root = $this->reflectionProperties($reflectionObject, $paxbObject, $dom, $root, $rootNamespace, $rootElementInfo);
 
         $dom->appendChild($root);
 
         return $this->responseAsString ? $dom->saveXML() : $dom;
     }
 
-    private function marshallChild(ReflectionProperty $reflectionProperty, object $objectInstance, DOMDocument $dom): ?DOMNode
+    private function marshallChild(ReflectionProperty $reflectionProperty, object $objectInstance, DOMDocument $dom, ?string $defaultNamespace = null, ?XmlRootElement $rootElementInfo = null): ?\DOMElement
     {
         $tagName = $this->getTagName($reflectionProperty);
-        $root    = $dom->createElement($tagName);
+        $elementInfo = $this->getElementInfo($reflectionProperty);
+        
+        // Use namespace from element or default namespace
+        $namespace = $elementInfo?->namespace ?? $defaultNamespace;
+        $prefix = $elementInfo?->namespacePrefix ?? $rootElementInfo?->namespacePrefix;
+        
+        $qualifiedName = $tagName;
+        if ($prefix && $namespace) {
+            $qualifiedName = $prefix . ':' . $tagName;
+        }
+        
+        if ($namespace !== null) {
+            $root = $dom->createElementNS($namespace, $qualifiedName);
+        } else {
+            $root = $dom->createElement($qualifiedName);
+        }
 
         $paxbObject       = $this->getTagValue($reflectionProperty, $objectInstance);
         $reflectionObject = new ReflectionObject($paxbObject);
 
-        return $this->reflectionProperties($reflectionObject, $paxbObject, $dom, $root);
+        return $this->reflectionProperties($reflectionObject, $paxbObject, $dom, $root, $namespace, $rootElementInfo);
     }
 
-    private function reflectionProperties(ReflectionObject $reflectionObject, object $paxbObject, DOMDocument $dom, DOMNode $root): DOMNode
+    private function reflectionProperties(ReflectionObject $reflectionObject, object $paxbObject, DOMDocument $dom, \DOMElement $root, ?string $defaultNamespace = null, ?XmlRootElement $rootElementInfo = null): \DOMElement
     {
         $reflectionProperties = $reflectionObject->getProperties();
         $hasXmlType           = $this->hasXmlType($reflectionObject);
@@ -177,7 +227,7 @@ class Marshaller implements IMarshaller
 
             $isChild = $this->isChild($reflectionProperty, $paxbObject);
             if ($isChild) {
-                $child = $this->marshallChild($reflectionProperty, $paxbObject, $dom);
+                $child = $this->marshallChild($reflectionProperty, $paxbObject, $dom, $defaultNamespace, $rootElementInfo);
                 if ($child !== null)
                     $root->appendChild($child);
 
@@ -190,21 +240,46 @@ class Marshaller implements IMarshaller
 
             if ($this->isAttribute($reflectionProperty)) {
                 $attributeXmlName = $this->getAttributeXmlName($reflectionProperty);
-                $root->setAttribute($attributeXmlName, $tagValue);
+                if ($root instanceof \DOMElement) {
+                    $root->setAttribute($attributeXmlName, (string)$tagValue);
+                }
             } elseif (is_array($tagValue)) {
                 $tagName = $this->getTagName($reflectionProperty);
+                $elementInfo = $this->getElementInfo($reflectionProperty);
+                $namespace = $elementInfo?->namespace ?? $defaultNamespace;
+                $prefix = $elementInfo?->namespacePrefix ?? $rootElementInfo?->namespacePrefix;
+                
                 foreach ($tagValue as $value) {
-                    $tagElement = $dom->createElement($tagName);
+                    $qualifiedName = $tagName;
+                    if ($prefix && $namespace) {
+                        $qualifiedName = $prefix . ':' . $tagName;
+                    }
+                    
+                    if ($namespace !== null) {
+                        $tagElement = $dom->createElementNS($namespace, $qualifiedName);
+                    } else {
+                        $tagElement = $dom->createElement($qualifiedName);
+                    }
+                    
                     if (is_object($value)) {
                         $reflectionObject = new ReflectionObject($value);
-                        $childNode = $this->reflectionProperties($reflectionObject, $value, $dom, $tagElement);
+                        $childNode = $this->reflectionProperties($reflectionObject, $value, $dom, $tagElement, $namespace, $rootElementInfo);
                         if ($childNode === null)
                             continue;
 
                         $root->appendChild($childNode);
                     } else {
                         $tagName = $this->getTagName($reflectionProperty);
-                        $child   = $dom->createElement($tagName, $tagValue);
+                        $qualifiedName = $tagName;
+                        if ($prefix && $namespace) {
+                            $qualifiedName = $prefix . ':' . $tagName;
+                        }
+                        
+                        if ($namespace !== null) {
+                            $child = $dom->createElementNS($namespace, $qualifiedName, (string)$tagValue);
+                        } else {
+                            $child = $dom->createElement($qualifiedName, (string)$tagValue);
+                        }
                         $root->appendChild($child);
                     }
                 }
@@ -213,7 +288,20 @@ class Marshaller implements IMarshaller
                     $root->appendChild($tagElement);
             } else {
                 $tagName = $this->getTagName($reflectionProperty);
-                $child   = $dom->createElement($tagName, $tagValue);
+                $elementInfo = $this->getElementInfo($reflectionProperty);
+                $namespace = $elementInfo?->namespace ?? $defaultNamespace;
+                $prefix = $elementInfo?->namespacePrefix ?? $rootElementInfo?->namespacePrefix;
+                
+                $qualifiedName = $tagName;
+                if ($prefix && $namespace) {
+                    $qualifiedName = $prefix . ':' . $tagName;
+                }
+                
+                if ($namespace !== null) {
+                    $child = $dom->createElementNS($namespace, $qualifiedName, $tagValue);
+                } else {
+                    $child = $dom->createElement($qualifiedName, $tagValue);
+                }
                 $root->appendChild($child);
             }
         }
@@ -313,6 +401,35 @@ class Marshaller implements IMarshaller
             $attributeInstance = $attribute->newInstance();
             if ($attributeInstance instanceof XmlRootElement)
                 return $attributeInstance->namespace;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<ReflectionAttribute> $attributes
+     */
+    private function retrieveRootElementInfo(array $attributes): ?XmlRootElement
+    {
+        foreach ($attributes as $attribute) {
+            $attributeInstance = $attribute->newInstance();
+            if ($attributeInstance instanceof XmlRootElement)
+                return $attributeInstance;
+        }
+
+        return null;
+    }
+
+    private function getElementInfo(ReflectionProperty $reflectionProperty): ?\Jeidison\PAXB\Attributes\XmlElement
+    {
+        $attributes = $reflectionProperty->getAttributes();
+        if (count($attributes) <= 0)
+            return null;
+
+        foreach ($attributes as $attribute) {
+            $attributeInstance = $attribute->newInstance();
+            if ($attributeInstance instanceof \Jeidison\PAXB\Attributes\XmlElement)
+                return $attributeInstance;
         }
 
         return null;

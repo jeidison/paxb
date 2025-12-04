@@ -10,6 +10,7 @@ class XmlElement extends Element
     public function __construct(
         public ?string $name = null,
         public ?string $namespace = null,
+        public ?string $namespacePrefix = null,
         public ?string $defaultValue = null,
         public bool $nillable = false,
         public bool $required = false,
