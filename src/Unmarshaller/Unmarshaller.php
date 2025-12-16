@@ -15,6 +15,7 @@ use ReflectionProperty;
 use stdClass;
 use SimpleXMLElement;
 use ReflectionClass;
+use ReflectionAttribute;
 
 class Unmarshaller implements IUnmarshaller
 {
@@ -63,13 +64,39 @@ class Unmarshaller implements IUnmarshaller
     private function getPropertyValue(SimpleXMLElement $objectXml, ReflectionProperty $reflectionProperty): string|null|object
     {
         $tagName = $this->getTagName($reflectionProperty);
-        if (!property_exists($objectXml, $tagName))
+        $elementInfo = $this->getElementInfo($reflectionProperty);
+        
+        $valueTag = null;
+        
+        if ($elementInfo && $elementInfo->namespace) {
+            $namespaceUri = $elementInfo->namespace;
+            $children = $objectXml->children($namespaceUri);
+            if ($children && isset($children->$tagName)) {
+                $valueTag = $children->$tagName;
+            }
+        } else {
+            if (property_exists($objectXml, $tagName)) {
+                $valueTag = $objectXml->$tagName;
+            }
+        }
+        
+        if ($valueTag === null)
             return null;
-
-        $valueTag      = $objectXml->$tagName;
-        $isObjectChild = $this->isObjectChild($reflectionProperty, $valueTag);
-        if (!$isObjectChild)
-            return $valueTag;
+            
+        if ($valueTag instanceof SimpleXMLElement && count($valueTag->children()) > 0) {
+            $isObjectChild = $this->isObjectChild($reflectionProperty, $valueTag);
+            if (!$isObjectChild) {
+                return (string) $valueTag;
+            }
+        } else {
+            if (!($valueTag instanceof SimpleXMLElement)) {
+                return $valueTag;
+            }
+            $isObjectChild = $this->isObjectChild($reflectionProperty, $valueTag);
+            if (!$isObjectChild) {
+                return (string) $valueTag;
+            }
+        }
 
         $typeChild   = $reflectionProperty->getType()->getName();
         $objectChild = new $typeChild;
@@ -156,6 +183,20 @@ class Unmarshaller implements IUnmarshaller
             return false;
 
         return true;
+    }
+
+    private function getElementInfo(ReflectionProperty $reflectionProperty): ?XmlElement
+    {
+        $attributes = $reflectionProperty->getAttributes();
+        
+        foreach ($attributes as $attribute) {
+            $attributeInstance = $attribute->newInstance();
+            if ($attributeInstance instanceof XmlElement) {
+                return $attributeInstance;
+            }
+        }
+        
+        return null;
     }
 
 }
