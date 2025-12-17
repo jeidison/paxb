@@ -235,7 +235,7 @@ class Marshaller implements IMarshaller
             }
 
             $tagValue = $this->getTagValue($reflectionProperty, $paxbObject);
-            if ($tagValue == '' || $tagValue === null)
+            if ($tagValue === null)
                 continue;
 
             if ($this->isAttribute($reflectionProperty)) {
@@ -298,9 +298,9 @@ class Marshaller implements IMarshaller
                 }
                 
                 if ($namespace !== null) {
-                    $child = $dom->createElementNS($namespace, $qualifiedName, $tagValue);
+                    $child = $dom->createElementNS($namespace, $qualifiedName, (string)$tagValue);
                 } else {
-                    $child = $dom->createElement($qualifiedName, $tagValue);
+                    $child = $dom->createElement($qualifiedName, (string)$tagValue);
                 }
                 $root->appendChild($child);
             }
